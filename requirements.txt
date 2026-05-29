@@ -1,0 +1,14 @@
+streamlit
+google-genai
+groq
+python-dotenv
+requests
+pandas
+numpy
+markdown
+python-docx
+beautifulsoup4
+lxml
+pydantic
+tenacity
+rich
