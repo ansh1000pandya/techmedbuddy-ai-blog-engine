@@ -25,13 +25,22 @@ from app.services.markdown_cleaner import (
 from app.services.groq_service import (
     generate_fast_content
 )
+from app.agents.memory_agent import (
+    TutorialMemory
+)
 
-
+from app.agents.concept_extractor_agent import (
+    extract_concepts
+)
 class TutorialOrchestrator:
 
     def __init__(self):
 
         self.tutorial_service = TutorialService()
+
+        self.memory = TutorialMemory()
+
+        
 
     # ---------------------------------------------------------
     # CURRICULUM EXTRACTION
@@ -219,12 +228,12 @@ h1, h2, h3 {{
 
     def generate_tutorial(
         self,
-        user_prompt: str
+        user_prompt: str,
+        selected_sections: list,
+        tutorial_mode: str
     ) -> tuple:
 
-        curriculum = self.extract_curriculum(
-            user_prompt
-        )
+        
 
         tutorial_parts = []
 
@@ -236,28 +245,55 @@ h1, h2, h3 {{
         # TOPIC GENERATION
         # -------------------------------------------------
 
-        for topic in curriculum["topics"]:
-
+        print("\nSELECTED SECTIONS:")
+        for i, section in enumerate(selected_sections):
+            print(i, "->", section)
+        for topic in selected_sections:
+            print("\n" + "=" * 60)
+            print(f"GENERATING SECTION: {topic}")
+            print("=" * 60 + "\n")
             topic_content = (
                 self.tutorial_service.generate_topic(
                     topic_title=topic,
-                    additional_requirements=(
-                        curriculum["requirements"]
-                    )
+                    tutorial_mode=tutorial_mode,
+                    main_topic=user_prompt,
+                    memory=self.memory
                 )
             )
+            tutorial_parts.append(
+                topic_content
+            )
+            concepts = extract_concepts(
+                topic,
+                topic_content
+            )
+            self.memory.add_concepts(
+                concepts
+            )
+            self.memory.add_section(
+                topic
+            )
 
-            tutorial_parts.append(topic_content)
+
+            
+
+            
+    
 
         # -------------------------------------------------
         # QUIZ
         # -------------------------------------------------
 
-        tutorial_parts.append("\n# Final Quiz\n")
+        if tutorial_mode == "Theory + Code":
+            tutorial_parts.append(
+                "\n# Final Quiz\n"
+            )
 
-        tutorial_parts.append(
-            self.generate_final_quiz(
-                curriculum["topics"]
+            tutorial_parts.append(
+                
+                self.generate_final_quiz(
+                    
+                    selected_sections
             )
         )
 
@@ -265,11 +301,16 @@ h1, h2, h3 {{
         # MINI PROJECT
         # -------------------------------------------------
 
-        tutorial_parts.append("\n# Mini Project\n")
+        if tutorial_mode == "Theory + Code":
+            tutorial_parts.append(
+                "\n# Mini Project\n"
+            )
 
-        tutorial_parts.append(
-            self.generate_mini_project(
-                curriculum["topics"]
+            tutorial_parts.append(
+                
+                self.generate_mini_project(
+                    
+                    selected_sections
             )
         )
 
@@ -286,7 +327,12 @@ h1, h2, h3 {{
         html_path = self.export_html(
             cleaned_tutorial
         )
-
+        memory_path = (
+            self.memory.export_memory()
+        )
+        print(
+            f"\nMEMORY SAVED: {memory_path}"
+        )
         return (
             cleaned_tutorial,
             html_path
@@ -297,10 +343,17 @@ h1, h2, h3 {{
 # STREAMLIT COMPATIBILITY
 # ---------------------------------------------------------
 
-def generate_tutorial(user_prompt: str):
+def generate_tutorial(
+    user_prompt,
+    selected_sections,
+    tutorial_mode
+):
+    
 
     orchestrator = TutorialOrchestrator()
 
     return orchestrator.generate_tutorial(
-        user_prompt
+        user_prompt=user_prompt,
+        selected_sections=selected_sections,
+        tutorial_mode=tutorial_mode
     )

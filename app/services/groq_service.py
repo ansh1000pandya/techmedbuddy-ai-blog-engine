@@ -48,14 +48,12 @@ def generate_fast_content(prompt: str):
 
         except Exception as e:
 
-            print("=" * 60)
-            print("GROQ GENERATION ERROR")
+            print("\n" + "=" * 60)
+            print("GROQ ERROR")
             print(str(e))
             print("=" * 60)
 
-            return (
-                "An error occurred while generating content."
-            )
+            return f"GROQ ERROR: {str(e)}"
 
     return (
         "Rate limit exceeded. "
