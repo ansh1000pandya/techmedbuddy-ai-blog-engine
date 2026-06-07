@@ -1,67 +1,67 @@
 import json
+
 from app.services.llm_router import (
     generate_llm_response
 )
 
 
-def generate_dynamic_outline(topic: str):
+def generate_tutorial_plan(topic):
 
-    prompt = f"""
+    planner_prompt = f"""
 You are an expert curriculum designer.
 
-Create a tutorial outline.
+Create a complete tutorial plan.
 
 TOPIC:
 {topic}
 
+For EACH section generate:
+
+1. section title
+2. content-generation prompt
+
 Return ONLY valid JSON.
 
-Example:
+Format:
 
 [
-    "Introduction",
-    "What is BLAST",
-    "Sequence Similarity",
-    "BLAST Algorithm",
-    "BLAST Databases",
-    "Interpreting Results",
-    "Applications",
-    "Best Practices",
-    "Summary"
+    {{
+        "section": "Introduction",
+        "prompt": "Teach beginners what BLAST is..."
+    }},
+    {{
+        "section": "BLAST Algorithm",
+        "prompt": "Explain how BLAST searches databases..."
+    }}
 ]
 
-Do not return explanations.
-Do not return markdown.
-Do not return headings.
-Do not return anything except JSON.
+Rules:
+
+- 8 to 15 sections
+- Beginner to Advanced
+- No duplicate sections
+- No markdown
+- No explanations
+
+Return JSON only.
 """
 
-
     response = generate_llm_response(
-        prompt
+        planner_prompt
     )
 
     try:
-        sections = json.loads(response)
-        if isinstance(sections, list):
-            unique_sections = []
-            for section in sections:
-                section = str(section).strip()
-                if (
-                    section
-                    and section not in unique_sections
-                ):
-                    unique_sections.append(
-                        section
-                    )
-            print("\nPLANNER OUTPUT:")
-            print(unique_sections)
-            return unique_sections
+
+        tutorial_plan = json.loads(
+            response
+        )
+
+        return tutorial_plan
+
     except Exception as e:
-        print(f"Planner JSON Parse Error: {e}")
+
+        print(
+            f"Planner Error: {e}"
+        )
+
         return []
-
-
-    
-        
-        
