@@ -5,45 +5,54 @@ from app.services.llm_router import (
 )
 
 
-def generate_tutorial_plan(topic):
+def generate_tutorial_plan(
+    topic: str
+):
 
     planner_prompt = f"""
-You are an expert curriculum designer.
+You are a senior curriculum architect.
 
-Create a complete tutorial plan.
+Your task is to design a complete tutorial plan.
 
 TOPIC:
 {topic}
 
-For EACH section generate:
+IMPORTANT:
 
-1. section title
-2. content-generation prompt
+You must create:
+
+1. Tutorial title
+2. 8-15 logical sections
+3. A detailed generation prompt for EACH section
+
+The prompts should:
+
+- teach ONLY that section
+- avoid repeating previous sections
+- be beginner friendly
+- include examples when appropriate
+- include code only if the topic requires code
 
 Return ONLY valid JSON.
 
 Format:
 
-[
-    {{
-        "section": "Introduction",
-        "prompt": "Teach beginners what BLAST is..."
-    }},
-    {{
-        "section": "BLAST Algorithm",
-        "prompt": "Explain how BLAST searches databases..."
-    }}
-]
+{{
+    "tutorial_title": "...",
+    "sections": [
+        {{
+            "id": 1,
+            "title": "...",
+            "prompt": "..."
+        }}
+    ]
+}}
 
-Rules:
+Do not return markdown.
 
-- 8 to 15 sections
-- Beginner to Advanced
-- No duplicate sections
-- No markdown
-- No explanations
+Do not return explanations.
 
-Return JSON only.
+Return ONLY JSON.
 """
 
     response = generate_llm_response(
@@ -52,16 +61,32 @@ Return JSON only.
 
     try:
 
-        tutorial_plan = json.loads(
+        plan = json.loads(
             response
         )
 
-        return tutorial_plan
+        print("\n" + "=" * 60)
+        print("PLANNER OUTPUT")
+        print("=" * 60)
+
+        print(
+            json.dumps(
+                plan,
+                indent=4
+            )
+        )
+
+        return plan
 
     except Exception as e:
 
         print(
-            f"Planner Error: {e}"
+            f"Planner Parse Error: {e}"
         )
 
-        return []
+        print(
+            "Raw Response:\n",
+            response
+        )
+
+        return None
