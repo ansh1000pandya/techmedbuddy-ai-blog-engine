@@ -16,21 +16,21 @@ sys.path.append(ROOT_DIR)
 # ---------------- IMPORTS ---------------- #
 
 from app.agents.planner_agent import (
-    generate_dynamic_outline
+    generate_tutorial_plan
 )
 
 from app.pipelines.blog_pipeline import (
     generate_blog
 )
 
-from app.services.tutorial_orchestrator import (
-    generate_tutorial
+from app.agents.tutorial_generator_agent import (
+    TutorialGeneratorAgent
 )
 
 # ---------------- SESSION STATE ---------------- #
 
-if "tutorial_outline" not in st.session_state:
-    st.session_state.tutorial_outline = []
+if "tutorial_plan" not in st.session_state:
+    st.session_state.tutorial_plan = None
 
 if "selected_sections" not in st.session_state:
     st.session_state.selected_sections = []
@@ -183,15 +183,17 @@ Data Structures
                 "Planner Agent Creating Outline..."
             ):
 
-                outline = generate_dynamic_outline(
-                    tutorial_topic
+                tutorial_plan = (
+                    generate_tutorial_plan(
+                        tutorial_topic
+                    )
                 )
 
-                st.session_state.tutorial_outline = (
-                    outline
+                st.session_state.tutorial_plan = (
+                    tutorial_plan
                 )
 
-    if st.session_state.tutorial_outline:
+    if st.session_state.tutorial_plan:
 
         st.markdown("---")
 
@@ -202,12 +204,15 @@ Data Structures
         selected_sections = []
 
         for section in (
-            st.session_state.tutorial_outline
+            st.session_state.tutorial_plan["sections"]
         ):
 
             checked = st.checkbox(
-                section,
+                section["title"],
                 value=True
+            )
+            st.caption(
+                section["prompt"]
             )
 
             if checked:
@@ -288,53 +293,37 @@ if generate_tutorial_button:
             "Generating Long-Form Tutorial..."
         ):
 
-            tutorial, html_path = generate_tutorial(
-                user_prompt=tutorial_topic,
-                selected_sections=(
-                    st.session_state.selected_sections
-                ),
-                tutorial_mode=tutorial_mode
+            generator = (TutorialGeneratorAgent())
+            tutorial = (generator.generate_tutorial(
+                tutorial_title=
+                st.session_state
+                .tutorial_plan["tutorial_title"],
+                selected_sections=
+                st.session_state
+                .selected_sections
             )
+            )
+            
+                
+            
 
         st.success(
             "Tutorial Generated Successfully!"
         )
 
-        st.success(
-            f"HTML Tutorial Exported Successfully:\n{html_path}"
-        )
-
-        st.markdown("---")
-
-        st.subheader(
-            "📘 Tutorial"
-        )
-
-        st.markdown(
-            tutorial,
-            unsafe_allow_html=True
-        )
-
-        with open(
-            html_path,
-            "r",
-            encoding="utf-8"
-        ) as html_file:
-
-            html_content = html_file.read()
-
-        st.download_button(
-            label="⬇️ Download Tutorial HTML",
-            data=html_content,
-            file_name="tutorial_output.html",
-            mime="text/html"
-        )
+        
+        
 
 # =========================================================
 # FOOTER
 # ========================================================= #
 
 st.markdown("---")
+st.subheader("📘 Tutorial")
+st.markdown(tutorial, unsafe_allow_html=True)
+print("\nTUTORIAL OUTPUT:")
+print(type(tutorial))
+print(tutorial[:])
 
 st.caption(
     "Powered by TechMedBuddy AI Engine"
